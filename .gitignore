@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Environment (never commit secrets — copy from .env.example)
+.env
+.env.*
+!.env.example
+
+# IDE / tools
+.idea/
+.vscode/
+*.swp
+.aider*
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+
+# Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.cover
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# MinIO / local data
+.minio/

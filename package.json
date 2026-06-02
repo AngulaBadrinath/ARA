@@ -1,0 +1,20 @@
+{
+  "name": "ara",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter @ara/web --filter @ara/api dev",
+    "dev:web": "pnpm --filter @ara/web dev",
+    "dev:api": "pnpm --filter @ara/api dev",
+    "build": "pnpm --filter @ara/shared-types build && pnpm --filter @ara/web build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

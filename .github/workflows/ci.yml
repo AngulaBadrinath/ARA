@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  secrets-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if .env is tracked
+        shell: bash
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env is tracked by git. Remove it with: git rm --cached .env"
+            exit 1
+          fi
+          tracked_env_files="$(git ls-files '.env.*' ':!.env.example' || true)"
+          if [ -n "$tracked_env_files" ]; then
+            echo "::error::Tracked env files found (excluding .env.example):"
+            echo "$tracked_env_files"
+            exit 1
+          fi
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm --filter @ara/shared-types build
+      - run: pnpm --filter @ara/web typecheck
+      - run: pnpm --filter @ara/web lint
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e "./apps/api[dev]"
+      - run: ruff check apps/api/app apps/api/tests
+      - run: pytest apps/api/tests
