@@ -20,6 +20,12 @@ class ResumeRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def create(self, resume: Resume) -> Resume:
+        self.db.add(resume)
+        self.db.commit()
+        self.db.refresh(resume)
+        return resume
+
     def get_by_id(self, resume_id: uuid.UUID, organization_id: uuid.UUID) -> Resume | None:
         return (
             self.db.query(Resume)

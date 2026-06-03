@@ -3,6 +3,9 @@ from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
+from pathlib import Path
+from fastapi import UploadFile, File
+import shutil
 
 from app.crud import create_user, get_users, get_user_by_id
 from app.schemas import UserCreate, UserResponse
@@ -19,6 +22,14 @@ from app.crud import (
     get_organizations,
 )
 
+from app.schemas import ResumeCreate, ResumeResponse
+
+from app.crud import (
+    create_resume,
+    get_resumes,
+    get_resume_by_id,
+)
+
 load_dotenv()
 import os
 
@@ -26,6 +37,9 @@ print("MAIN DATABASE_URL =", os.getenv("DATABASE_URL"))
 print("MAIN POSTGRES_USER =", os.getenv("POSTGRES_USER"))
 
 app = FastAPI(title="ARA Backend", version="0.1.0")
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 
 @app.get("/health")
@@ -109,3 +123,68 @@ def get_user(
         )
 
     return user
+
+@app.post(
+    "/resumes",
+    response_model=ResumeResponse,
+)
+def create_resume_endpoint(
+    payload: ResumeCreate,
+    db: Session = Depends(get_db),
+):
+    return create_resume(
+        db,
+        user_id=payload.user_id,
+        file_name=payload.file_name,
+        file_path=payload.file_path,
+        resume_text=payload.resume_text,
+    )
+
+@app.get(
+    "/resumes/{resume_id}",
+    response_model=ResumeResponse,
+)
+def get_resume(
+    resume_id: UUID,
+    db: Session = Depends(get_db),
+):
+    resume = get_resume_by_id(
+        db,
+        resume_id,
+    )
+
+    if not resume:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume not found",
+        )
+
+    return resume
+
+
+@app.get(
+    "/resumes",
+    response_model=list[ResumeResponse],
+)
+def list_resumes(
+    db: Session = Depends(get_db),
+):
+    return get_resumes(db)      
+
+
+@app.post("/upload")
+def upload_resume(
+    file: UploadFile = File(...)
+):
+    file_path = UPLOAD_DIR / file.filename
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(
+            file.file,
+            buffer,
+        )
+
+    return {
+        "filename": file.filename,
+        "path": str(file_path),
+    }

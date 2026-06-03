@@ -32,3 +32,20 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ResumeCreate(BaseModel):
+    user_id: UUID
+    file_name: str
+    file_path: str
+    resume_text: str | None = None
+    
+
+class ResumeResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    file_name: str
+    file_path: str
+    status: str
+
+    class Config:
+        from_attributes = True 
