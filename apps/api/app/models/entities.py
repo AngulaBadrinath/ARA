@@ -77,7 +77,11 @@ class AnalysisJob(Base):
         UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
     )
     status: Mapped[AnalysisJobStatus] = mapped_column(
-        Enum(AnalysisJobStatus, name="analysis_job_status"),
+        Enum(
+            AnalysisJobStatus,
+            name="analysis_job_status",
+            values_callable=lambda x: [e.value for e in x],
+        ),
         default=AnalysisJobStatus.PENDING,
         index=True,
     )

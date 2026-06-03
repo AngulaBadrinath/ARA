@@ -1,4 +1,5 @@
 from ollama import chat
+import json
 
 
 def analyze_resume(resume_text: str):
@@ -10,18 +11,43 @@ def analyze_resume(resume_text: str):
                 "content": f"""
 Analyze this resume.
 
-Return:
-1. Summary
-2. Key Skills
-3. Missing Skills
-4. ATS Score out of 100
+IMPORTANT:
+Return ONLY raw JSON.
+Do NOT wrap JSON in markdown.
+Do NOT use ```json.
+Do NOT provide explanations.
+
+Format:
+
+{{
+    "summary": "short summary",
+    "skills": ["skill1", "skill2"],
+    "missing_skills": ["skill1", "skill2"],
+    "ats_score": 0
+}}
 
 Resume:
 
 {resume_text}
-""",
+"""
             }
         ],
     )
 
-    return response["message"]["content"]
+    content = response["message"]["content"]
+
+    content = content.replace("```json", "")
+    content = content.replace("```", "")
+    content = content.strip()
+
+    try:
+        return json.loads(content)
+
+    except Exception:
+        return {
+            "summary": "Parsing failed",
+            "skills": [],
+            "missing_skills": [],
+            "ats_score": 0,
+            "raw": content,
+        }

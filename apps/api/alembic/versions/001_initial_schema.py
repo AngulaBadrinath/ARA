@@ -63,7 +63,12 @@ def upgrade() -> None:
     op.create_index(op.f("ix_resumes_uploaded_by_id"), "resumes", ["uploaded_by_id"], unique=False)
 
     analysis_status = postgresql.ENUM(
-        "pending", "processing", "completed", "failed", name="analysis_job_status", create_type=True
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        name="analysis_job_status",
+        create_type=False,
     )
     analysis_status.create(op.get_bind(), checkfirst=True)
 

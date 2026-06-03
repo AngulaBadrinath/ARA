@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.models import AnalysisJob, Resume, User
+from app.models import AnalysisJob, AnalysisJobStatus, AnalysisResult, Resume, User
 
 
 class UserRepository:
@@ -46,9 +46,88 @@ class AnalysisRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def get_job(self, job_id: uuid.UUID, organization_id: uuid.UUID) -> AnalysisJob | None:
+    def get_job(
+        self,
+        job_id: uuid.UUID,
+        organization_id: uuid.UUID,
+    ) -> AnalysisJob | None:
         return (
             self.db.query(AnalysisJob)
-            .filter(AnalysisJob.id == job_id, AnalysisJob.organization_id == organization_id)
+            .filter(
+                AnalysisJob.id == job_id,
+                AnalysisJob.organization_id == organization_id,
+            )
             .first()
         )
+
+    def get_job_with_result(
+        self,
+        job_id: uuid.UUID,
+    ) -> AnalysisJob | None:
+        return (
+            self.db.query(AnalysisJob)
+            .filter(AnalysisJob.id == job_id)
+            .first()
+        )
+
+    def create_job(
+        self,
+        resume_id,
+        organization_id,
+    ):
+        job = AnalysisJob(
+            resume_id=resume_id,
+            organization_id=organization_id,
+            status=AnalysisJobStatus.PENDING,
+        )
+
+        self.db.add(job)
+        self.db.commit()
+        self.db.refresh(job)
+
+        return job
+
+    def update_job_status(
+        self,
+        job_id,
+        status,
+    ):
+        job = (
+            self.db.query(AnalysisJob)
+            .filter(AnalysisJob.id == job_id)
+            .first()
+        )
+
+        if not job:
+            return None
+
+        job.status = status
+
+        self.db.commit()
+        self.db.refresh(job)
+
+        return job
+
+    def create_analysis_result(
+        self,
+        job_id,
+        summary,
+        skills,
+        missing_skills,
+        ats_score,
+        raw_response,
+    ):
+        result = AnalysisResult(
+            job_id=job_id,
+            summary=summary,
+            skills=skills,
+            gaps=missing_skills,
+            score=ats_score,
+            raw_response=raw_response,
+        )
+
+        self.db.add(result)
+        self.db.commit()
+        self.db.refresh(result)
+
+        return result

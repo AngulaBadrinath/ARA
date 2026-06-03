@@ -9,9 +9,16 @@ from app.core.config import get_settings
 class Base(DeclarativeBase):
     pass
 
-
 settings = get_settings()
-engine = create_engine(settings.database_url, pool_pre_ping=True)
+
+print("=" * 50)
+print("DATABASE URL:", settings.database_url)
+print("=" * 50)
+
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
