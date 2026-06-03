@@ -1,23 +1,28 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.repositories import AnalysisRepository
-from app.schemas import AnalysisJobCreate, AnalysisJobDetailResponse, AnalysisJobResponse
-
+from app.schemas import AnalysisJobDetailResponse
 from app.services.analysis_service import analyze_pdf
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
+
+
+class AnalyzeRequest(BaseModel):
+    file_path: str
+
+
 @router.post("/jobs")
-def create_analysis_job(
-    _payload: AnalysisJobCreate,
-    _db: Session = Depends(get_db),
-):
-    result = analyze_pdf(
-        r"C:\Projects\ARA\backend\uploads\AB Resume.pdf"
-    )
+def create_analysis_job(payload: AnalyzeRequest):
+    """
+    Analyze an uploaded resume PDF using Ollama.
+    """
+
+    result = analyze_pdf(payload.file_path)
 
     return {
         "status": "completed",
@@ -36,6 +41,14 @@ def get_analysis_job(
     db: Session = Depends(get_db),
 ) -> AnalysisJobDetailResponse:
     job = AnalysisRepository(db).get_job(job_id, organization_id)
+
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Not implemented",
+    )

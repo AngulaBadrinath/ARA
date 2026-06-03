@@ -1,6 +1,8 @@
 import uuid
+import shutil
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File 
+from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -13,7 +15,7 @@ router = APIRouter(prefix="/resumes", tags=["resumes"])
 @router.get("/", response_model=list[ResumeResponse], status_code=status.HTTP_501_NOT_IMPLEMENTED)
 def list_resumes(
     _organization_id: uuid.UUID,
-    _db: Session = Depends(get_db),
+    _db: Session = Depends(get_db), 
 ) -> list[ResumeResponse]:
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
 
@@ -46,3 +48,19 @@ def get_resume(
 def create_upload_url(_db: Session = Depends(get_db)) -> PresignedUploadResponse:
     """Return presigned URL for direct upload to object storage."""
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
+
+
+@router.post("/upload")
+async def upload_resume(file: UploadFile = File(...)):
+    upload_dir = Path("uploads")
+    upload_dir.mkdir(exist_ok=True)
+
+    file_path = upload_dir / file.filename
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {
+        "filename": file.filename,
+        "path": str(file_path)
+    }
