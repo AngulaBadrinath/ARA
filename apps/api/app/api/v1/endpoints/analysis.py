@@ -7,16 +7,22 @@ from app.db.session import get_db
 from app.repositories import AnalysisRepository
 from app.schemas import AnalysisJobCreate, AnalysisJobDetailResponse, AnalysisJobResponse
 
+from app.services.analysis_service import analyze_pdf
+
 router = APIRouter(prefix="/analysis", tags=["analysis"])
-
-
-@router.post("/jobs", response_model=AnalysisJobResponse, status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.post("/jobs")
 def create_analysis_job(
     _payload: AnalysisJobCreate,
     _db: Session = Depends(get_db),
-) -> AnalysisJobResponse:
-    """Enqueue async resume analysis."""
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
+):
+    result = analyze_pdf(
+        r"C:\Projects\ARA\backend\uploads\AB Resume.pdf"
+    )
+
+    return {
+        "status": "completed",
+        "analysis": result["analysis"],
+    }
 
 
 @router.get(
