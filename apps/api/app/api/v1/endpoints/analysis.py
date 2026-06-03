@@ -6,18 +6,14 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models import AnalysisJob, AnalysisJobStatus
-from app.repositories import AnalysisRepository
+from app.repositories import AnalysisRepository, ResumeRepository
 from app.schemas import AnalysisJobDetailResponse
 from app.services.analysis_service import analyze_pdf
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
-
-
 class AnalyzeRequest(BaseModel):
-    file_path: str
-    resume_id: uuid.UUID
-    organization_id: uuid.UUID
+    resume_id: str
 
 
 @router.post("/jobs")
@@ -25,14 +21,23 @@ def create_analysis_job(
     payload: AnalyzeRequest,
     db: Session = Depends(get_db),
 ):
+    resume_repo = ResumeRepository(db)
     analysis_repo = AnalysisRepository(db)
 
+    resume = resume_repo.get_resume(payload.resume_id)
+
+    if not resume:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume not found",
+        )
+
     job = analysis_repo.create_job(
-        resume_id=payload.resume_id,
-        organization_id=payload.organization_id,
+        resume_id=resume.id,
+        organization_id=resume.organization_id,
     )
 
-    result = analyze_pdf(payload.file_path)
+    result = analyze_pdf(resume.storage_key)
 
     analysis_repo.create_analysis_result(
         job_id=job.id,
@@ -42,6 +47,7 @@ def create_analysis_job(
         ats_score=result.get("ats_score", 0),
         raw_response=result,
     )
+
     analysis_repo.update_job_status(
         job.id,
         AnalysisJobStatus.COMPLETED,

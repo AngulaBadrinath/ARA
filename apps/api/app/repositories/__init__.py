@@ -33,6 +33,13 @@ class ResumeRepository:
             .first()
         )
 
+    def get_resume(self, resume_id):
+        return (
+            self.db.query(Resume)
+            .filter(Resume.id == resume_id)
+            .first()
+        )    
+
     def list_by_organization(self, organization_id: uuid.UUID) -> list[Resume]:
         return (
             self.db.query(Resume)
