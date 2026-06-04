@@ -1,13 +1,17 @@
 import uuid
 import shutil
+import os
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File 
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from uuid import UUID 
 from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models import Resume
 from app.repositories import ResumeRepository
 from app.schemas import PresignedUploadResponse, ResumeCreate, ResumeResponse
+from app.services.resume_parser import extract_text_from_pdf
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
 
@@ -51,7 +55,7 @@ def create_upload_url(_db: Session = Depends(get_db)) -> PresignedUploadResponse
 
 
 @router.post("/upload")
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_db),):
     upload_dir = Path("uploads")
     upload_dir.mkdir(exist_ok=True)
 
@@ -60,7 +64,24 @@ async def upload_resume(file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    extracted_text = extract_text_from_pdf(file_path)
+    
+    resume = Resume(
+        organization_id=UUID("2a3fa96b-e453-467a-954d-f230703c6349"),
+        uploaded_by_id=UUID("b5ec2751-fdcc-42ce-b0a9-2ceeb5674b24"),
+        title=file.filename.replace(".pdf", ""),
+        original_filename=file.filename,
+        storage_key=str(file_path),
+        content_type=file.content_type,
+        file_size_bytes=os.path.getsize(file_path),
+        extracted_text=extracted_text,
+    )
+
+    resume_repo = ResumeRepository(db)
+    saved_resume = resume_repo.create(resume)
+
     return {
-        "filename": file.filename,
-        "path": str(file_path)
+        "resume_id": str(saved_resume.id),
+        "filename": saved_resume.original_filename,
+        "characters": len(extracted_text),
     }

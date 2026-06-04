@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.models import AnalysisJob, AnalysisJobStatus
 from app.repositories import AnalysisRepository, ResumeRepository
 from app.schemas import AnalysisJobDetailResponse
-from app.services.analysis_service import analyze_pdf
+from app.services.analysis_service import analyze_text
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -37,7 +37,9 @@ def create_analysis_job(
         organization_id=resume.organization_id,
     )
 
-    result = analyze_pdf(resume.storage_key)
+    result = analyze_text(
+        resume.extracted_text or ""
+    )
 
     analysis_repo.create_analysis_result(
         job_id=job.id,
