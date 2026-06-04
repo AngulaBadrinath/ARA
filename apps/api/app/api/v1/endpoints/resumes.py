@@ -7,6 +7,7 @@ from uuid import UUID
 from pathlib import Path
 from sqlalchemy.orm import Session
 
+from app.api.v1.endpoints.auth import get_current_user
 from app.db.session import get_db
 from app.models import Resume
 from app.repositories import ResumeRepository
@@ -54,21 +55,45 @@ def create_upload_url(_db: Session = Depends(get_db)) -> PresignedUploadResponse
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
 
 
+from pathlib import Path
+import os
+import shutil
+
+from fastapi import APIRouter, Depends, File, UploadFile
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.api.v1.endpoints.auth import get_current_user
+from app.models import Resume
+from app.repositories import ResumeRepository
+from app.services.resume_parser import extract_text_from_pdf
+
+router = APIRouter(prefix="/resumes", tags=["resumes"])
+
+
 @router.post("/upload")
-async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_db),):
+async def upload_resume(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Create uploads directory
     upload_dir = Path("uploads")
     upload_dir.mkdir(exist_ok=True)
 
+    # Save file
     file_path = upload_dir / file.filename
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    extracted_text = extract_text_from_pdf(file_path)
-    
+    # Extract text
+    extracted_text = extract_text_from_pdf(str(file_path))
+
+    # Create Resume object
     resume = Resume(
-        organization_id=UUID("2a3fa96b-e453-467a-954d-f230703c6349"),
-        uploaded_by_id=UUID("b5ec2751-fdcc-42ce-b0a9-2ceeb5674b24"),
+        organization_id=current_user.organization_id,
+        uploaded_by_id=current_user.id,
         title=file.filename.replace(".pdf", ""),
         original_filename=file.filename,
         storage_key=str(file_path),
@@ -77,6 +102,7 @@ async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_
         extracted_text=extracted_text,
     )
 
+    # Save to database
     resume_repo = ResumeRepository(db)
     saved_resume = resume_repo.create(resume)
 
