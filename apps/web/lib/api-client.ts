@@ -28,7 +28,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new ApiError(`Request failed: ${response.statusText}`, response.status);
+    throw new ApiError(
+      `Request failed: ${response.statusText}`,
+      response.status,
+    );
   }
 
   return response.json() as Promise<T>;
@@ -38,10 +41,16 @@ export const apiClient = {
   health: () => request<{ status: string }>("/api/v1/health"),
 
   register: (body: unknown) =>
-    request<UserSummary>("/api/v1/auth/register", { method: "POST", body: JSON.stringify(body) }),
+    request<UserSummary>("/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   login: (body: unknown) =>
-    request<TokenResponse>("/api/v1/auth/login", { method: "POST", body: JSON.stringify(body) }),
+    request<TokenResponse>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   listResumes: () => request<ResumeSummary[]>("/api/v1/resumes/"),
 
