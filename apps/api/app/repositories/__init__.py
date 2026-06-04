@@ -50,13 +50,20 @@ class ResumeRepository:
             .first()
         )    
 
-    def list_by_organization(self, organization_id: uuid.UUID) -> list[Resume]:
+    def list_by_organization(
+        self,
+        organization_id,
+    ):
         return (
             self.db.query(Resume)
-            .filter(Resume.organization_id == organization_id)
-            .order_by(Resume.created_at.desc())
+            .filter(
+            Resume.organization_id == organization_id
+            )
+            .order_by(
+            Resume.created_at.desc()
+            )
             .all()
-        )
+        ) 
 
 
 class AnalysisRepository:
@@ -148,6 +155,23 @@ class AnalysisRepository:
         self.db.refresh(result)
 
         return result
+
+
+    def list_jobs_by_organization(
+        self,
+        organization_id,
+    ):
+        return (
+            self.db.query(AnalysisJob)
+            .filter(
+            AnalysisJob.organization_id
+            == organization_id
+            )
+            .order_by(
+            AnalysisJob.created_at.desc()
+            )
+            .all()
+        )        
 
 
 class OrganizationRepository:

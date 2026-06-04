@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.api.v1.endpoints.auth import get_current_user
 from app.models import AnalysisJob, AnalysisJobStatus
 from app.repositories import AnalysisRepository, ResumeRepository
 from app.schemas import AnalysisJobDetailResponse
@@ -88,3 +89,40 @@ def get_analysis_job(
             "score": job.result.score,
         } if job.result else None,
     }
+
+@router.get("/jobs")
+def list_analysis_jobs(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    jobs = (
+        db.query(AnalysisJob)
+        .filter(
+            AnalysisJob.organization_id
+            == current_user.organization_id
+        )
+        .order_by(
+            AnalysisJob.created_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "job_id": str(job.id),
+            "resume_id": str(job.resume_id),
+            "resume_title": (
+                job.resume.title
+                if job.resume
+                else None
+            ),
+            "status": job.status.value,
+            "score": (
+                job.result.score
+                if job.result
+                else None
+            ),
+            "created_at": job.created_at,
+        }
+        for job in jobs
+    ]
