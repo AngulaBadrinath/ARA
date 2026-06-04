@@ -10,6 +10,9 @@ class ORMModel(BaseModel):
 
 # ── Auth ────────────────────────────────────────────────────
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 class UserCreate(BaseModel):
     email: EmailStr

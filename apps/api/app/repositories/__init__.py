@@ -2,10 +2,20 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.models import AnalysisJob, AnalysisJobStatus, AnalysisResult, Resume, User
+from app.models import AnalysisJob, AnalysisJobStatus, AnalysisResult, Resume, User, Organization
 
 
 class UserRepository:
+
+    def create(
+        self,
+        user: User,
+    ) -> User:
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
     def __init__(self, db: Session) -> None:
         self.db = db
 
@@ -138,3 +148,24 @@ class AnalysisRepository:
         self.db.refresh(result)
 
         return result
+
+
+class OrganizationRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(
+        self,
+        name: str,
+        slug: str,
+    ):
+        organization = Organization(
+            name=name,
+            slug=slug,
+        )
+
+        self.db.add(organization)
+        self.db.commit()
+        self.db.refresh(organization)
+
+        return organization
