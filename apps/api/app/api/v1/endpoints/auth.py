@@ -30,6 +30,7 @@ from app.schemas import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
 
+
 @router.post(
     "/register",
     response_model=UserResponse,
@@ -40,9 +41,7 @@ def register(
 ):
     user_repo = UserRepository(db)
 
-    existing_user = user_repo.get_by_email(
-        payload.email
-    )
+    existing_user = user_repo.get_by_email(payload.email)
 
     if existing_user:
         raise HTTPException(
@@ -52,17 +51,20 @@ def register(
 
     org_repo = OrganizationRepository(db)
 
-    organization = org_repo.create(
-        name=payload.organization_name,
-        slug=payload.organization_name.lower().replace(" ", "-"),
-    )
+    slug = payload.organization_name.lower().strip().replace(" ", "-")
+
+    organization = org_repo.get_by_slug(slug)
+
+    if organization is None:
+        organization = org_repo.create(
+            name=payload.organization_name,
+            slug=slug,
+        )
 
     user = User(
         organization_id=organization.id,
         email=payload.email,
-        hashed_password=hash_password(
-            payload.password
-        ),
+        hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
     )
 

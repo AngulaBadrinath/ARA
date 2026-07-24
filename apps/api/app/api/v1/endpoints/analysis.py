@@ -20,12 +20,19 @@ class AnalyzeRequest(BaseModel):
 @router.post("/jobs")
 def create_analysis_job(
     payload: AnalyzeRequest,
+    current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     resume_repo = ResumeRepository(db)
     analysis_repo = AnalysisRepository(db)
 
     resume = resume_repo.get_resume(payload.resume_id)
+    
+    if not resume or resume.organization_id != current_user.organization_id:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume not found",
+        )
 
     if not resume:
         raise HTTPException(

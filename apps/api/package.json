@@ -6,5 +6,9 @@
     "lint": "ruff check app tests",
     "typecheck": "echo \"Python typecheck: configure mypy when ready\"",
     "test": "pytest"
+  },
+  "dependencies": {
+    "alembic": "^0.0.3",
+    "uvicorn": "^0.0.1-security"
   }
 }

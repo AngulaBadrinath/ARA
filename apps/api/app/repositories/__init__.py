@@ -178,6 +178,28 @@ class OrganizationRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_by_slug(
+        self,
+        slug: str,
+    ) -> Organization | None:
+        return (
+            self.db.query(Organization)
+            .filter(Organization.slug == slug)
+            .first()
+        )
+
+    def get_by_id(
+        self,
+        organization_id,
+    ):
+        return (
+            self.db.query(Organization)
+            .filter(
+                Organization.id == organization_id
+            )
+            .first()
+        )
+
     def create(
         self,
         name: str,

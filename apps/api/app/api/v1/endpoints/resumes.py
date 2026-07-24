@@ -3,69 +3,14 @@ import shutil
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from uuid import UUID 
 from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.api.v1.endpoints.auth import get_current_user
 from app.db.session import get_db
-from app.models import Resume
+from app.models import Resume, AnalysisJob
 from app.repositories import ResumeRepository
 from app.schemas import PresignedUploadResponse, ResumeCreate, ResumeResponse
-from app.services.resume_parser import extract_text_from_pdf
-
-router = APIRouter(prefix="/resumes", tags=["resumes"])
-
-
-@router.get("/", response_model=list[ResumeResponse], status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def list_resumes(
-    _organization_id: uuid.UUID,
-    _db: Session = Depends(get_db), 
-) -> list[ResumeResponse]:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
-
-
-@router.post("/", response_model=ResumeResponse, status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def create_resume(
-    _payload: ResumeCreate,
-    _db: Session = Depends(get_db),
-) -> ResumeResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
-
-
-@router.get("/{resume_id}", response_model=ResumeResponse, status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def get_resume(
-    resume_id: uuid.UUID,
-    organization_id: uuid.UUID,
-    db: Session = Depends(get_db),
-) -> ResumeResponse:
-    resume = ResumeRepository(db).get_by_id(resume_id, organization_id)
-    if not resume:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
-
-
-@router.post(
-    "/upload-url",
-    response_model=PresignedUploadResponse,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-)
-def create_upload_url(_db: Session = Depends(get_db)) -> PresignedUploadResponse:
-    """Return presigned URL for direct upload to object storage."""
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
-
-
-from pathlib import Path
-import os
-import shutil
-
-from fastapi import APIRouter, Depends, File, UploadFile
-from sqlalchemy.orm import Session
-
-from app.db.session import get_db
-from app.api.v1.endpoints.auth import get_current_user
-from app.models import Resume
-from app.repositories import ResumeRepository
 from app.services.resume_parser import extract_text_from_pdf
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
@@ -134,7 +79,7 @@ def list_resumes(
 
 @router.get("/{resume_id}")
 def get_resume(
-    resume_id: str,
+    resume_id: uuid.UUID,
     current_user = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -156,6 +101,36 @@ def get_resume(
         "content_type": resume.content_type,
         "file_size_bytes": resume.file_size_bytes,
         "created_at": resume.created_at,
-    }    
+    }
+
+
+@router.delete("/{resume_id}")
+def delete_resume(
+    resume_id: uuid.UUID,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    resume = ResumeRepository(db).get_by_id(
+        resume_id,
+        current_user.organization_id,
+    )
+
+    if not resume:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume not found",
+        )
+
+    # Delete associated analysis jobs and results first
+    jobs = db.query(AnalysisJob).filter(AnalysisJob.resume_id == resume_id).all()
+    for job in jobs:
+        if job.result:
+            db.delete(job.result)
+        db.delete(job)
+
+    db.delete(resume)
+    db.commit()
+
+    return {"status": "deleted"}
 
 

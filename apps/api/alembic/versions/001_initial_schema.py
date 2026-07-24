@@ -53,6 +53,7 @@ def upgrade() -> None:
         sa.Column("original_filename", sa.String(length=512), nullable=False),
         sa.Column("storage_key", sa.String(length=1024), nullable=False),
         sa.Column("content_type", sa.String(length=128), nullable=False),
+        sa.Column("extracted_text", sa.Text(), nullable=True),
         sa.Column("file_size_bytes", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"]),

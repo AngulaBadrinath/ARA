@@ -19,9 +19,12 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     settings = get_settings()
     setup_logging(settings.log_level)
+
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     app.state.redis = await create_pool(redis_settings)
+
     yield
+
     await app.state.redis.close()
 
 
@@ -52,3 +55,10 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+@app.get("/")
+async def root():
+    return {
+        "message": "ARA API is running",
+        "docs": "/docs"
+    }
